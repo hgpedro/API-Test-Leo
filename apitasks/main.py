@@ -18,7 +18,7 @@ class Task(Base):
 # Criar o banco de dados
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+app = FastAPI(root_path="/api/v1")
 
 # Função para obter a sessão do banco de dados
 def get_db():
@@ -41,7 +41,7 @@ def populate_db():
 populate_db()
 
 # Rota para listar todas as tasks
-@app.get("/tasks/")
+@app.get("/tasks")
 def read_tasks(db: Session = Depends(get_db)):
     tasks = db.query(Task).all()
     return [{"id": task.id, "task": task.task} for task in tasks]

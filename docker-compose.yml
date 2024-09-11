@@ -1,0 +1,57 @@
+version: '3.9'
+
+services:
+  # Banco de Dados PostgreSQL para o Kong
+  kong-db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: kong
+      POSTGRES_PASSWORD: kong
+      POSTGRES_DB: kong
+    volumes:
+      - kong-db-data:/var/lib/postgresql/data
+    networks:
+      - kong-net
+
+  # Kong Gateway + Kong Manager (GUI)
+  kong:
+    image: kong:latest
+    restart: always
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-db
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong
+      KONG_PG_DATABASE: kong
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_MANAGER_LISTEN: 0.0.0.0:8002
+    ports:
+      - "8000:8000"  # Kong Proxy
+      - "8001:8001"  # Kong Admin API
+      - "8002:8002"  # Kong Manager (Kong GUI)
+    depends_on:
+      - kong-db
+    networks:
+      - kong-net
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
+  # Serviço da API Python (FastAPI)
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    networks:
+      - kong-net
+
+volumes:
+  kong-db-data:
+
+networks:
+  kong-net:
